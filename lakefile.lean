@@ -133,16 +133,16 @@ module_facet docs (mod) : FilePath := do
   let buildDir := (←getWorkspace).root.buildDir
   let docFile := mod.filePath (buildDir / "doc") "html"
   depDocJobs.bindAsync fun _ depDocTrace => do
-  exeJob.bindAsync fun exeFile exeTrace => do
-  modJob.bindSync fun _ modTrace => do
-    let depTrace := mixTraceArray #[exeTrace, modTrace, depDocTrace]
-    let trace ← buildFileUnlessUpToDate docFile depTrace do
-      proc {
-        cmd := exeFile.toString
-        args := #["single", mod.name.toString, srcUri]
-        env := ← getAugmentedEnv
-      }
-    return (docFile, trace)
+    exeJob.bindAsync fun exeFile exeTrace => do
+      modJob.bindSync fun _ modTrace => do
+        let depTrace := mixTraceArray #[exeTrace, modTrace, depDocTrace]
+        let trace ← buildFileUnlessUpToDate docFile depTrace do
+          proc {
+            cmd := exeFile.toString
+            args := #["single", mod.name.toString, srcUri]
+            env := ← getAugmentedEnv
+          }
+        return (docFile, trace)
 
 -- TODO: technically speaking this target does not show all file dependencies
 target coreDocs : FilePath := do
