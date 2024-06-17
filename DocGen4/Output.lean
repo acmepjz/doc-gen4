@@ -10,6 +10,7 @@ import DocGen4.Output.Index
 import DocGen4.Output.Module
 import DocGen4.Output.NotFound
 import DocGen4.Output.Find
+import DocGen4.Output.References
 import DocGen4.Output.SourceLinker
 import DocGen4.Output.Search
 import DocGen4.Output.ToJson

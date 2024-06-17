@@ -35,6 +35,24 @@ def runDocGenCmd (_p : Parsed) : IO UInt32 := do
   IO.println "https://github.com/leanprover/doc-gen4"
   return 0
 
+def runBibPrepassCmd (p : Parsed) : IO UInt32 := do
+  removeBibFile
+  let source := match p.positionalArg? "source" with
+    | .some s => (s.as? String).getD "-"
+    | .none => "-"
+  if source == "-" then
+    IO.println "INFO: reference page disabled"
+  else
+    let readFile : IO (Option String) := do
+      let s := (← IO.FS.readFile source)
+      pure (.some s)
+    let readFileFailed : IO (Option String) := do
+      IO.println s!"WARNING: failed to load file \"{source}\"; reference page disabled"
+      pure .none
+    if let .some s ← (readFile <|> readFileFailed) then
+      preprocessBibFile s
+  return 0
+
 def singleCmd := `[Cli|
   single VIA runSingleCmd;
   "Only generate the documentation for the module it was given, might contain broken links unless all documentation is generated."
@@ -59,6 +77,14 @@ def genCoreCmd := `[Cli|
   "Generate documentation for the core Lean modules: Init and Lean since they are not Lake projects"
 ]
 
+def bibPrepassCmd := `[Cli|
+  bibPrepass VIA runBibPrepassCmd;
+  "Run the bibliography prepass: copy the bibliography file to output directory"
+
+  ARGS:
+    source : String; "The bibliography file. If it is '-' or inexistent file, the reference page will be disabled."
+]
+
 def docGenCmd : Cmd := `[Cli|
   "doc-gen4" VIA runDocGenCmd; ["0.1.0"]
   "A documentation generator for Lean 4."
@@ -66,7 +92,8 @@ def docGenCmd : Cmd := `[Cli|
   SUBCOMMANDS:
     singleCmd;
     indexCmd;
-    genCoreCmd
+    genCoreCmd;
+    bibPrepassCmd
 ]
 
 def main (args : List String) : IO UInt32 :=
