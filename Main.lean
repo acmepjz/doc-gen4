@@ -36,21 +36,17 @@ def runDocGenCmd (_p : Parsed) : IO UInt32 := do
   return 0
 
 def runBibPrepassCmd (p : Parsed) : IO UInt32 := do
-  removeBibFile
   let source := match p.positionalArg? "source" with
     | .some s => (s.as? String).getD "-"
     | .none => "-"
   if source == "-" then
     IO.println "INFO: reference page disabled"
+    preprocessBibFile ""
   else
-    let readFile : IO (Option String) := do
-      let s := (← IO.FS.readFile source)
-      pure (.some s)
-    let readFileFailed : IO (Option String) := do
+    let readFileFailed : IO String := do
       IO.println s!"WARNING: failed to load file \"{source}\"; reference page disabled"
-      pure .none
-    if let .some s ← (readFile <|> readFileFailed) then
-      preprocessBibFile s
+      pure ""
+    preprocessBibFile (← (IO.FS.readFile source <|> readFileFailed))
   return 0
 
 def singleCmd := `[Cli|

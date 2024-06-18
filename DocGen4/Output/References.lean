@@ -95,21 +95,19 @@ def parse (s : String) : Except String (List (String × HashMap String String)) 
 
 end BibParser
 
-/-- Removes bib file in the output path. -/
-def removeBibFile : IO Unit := do
-  IO.FS.removeFile (Output.basePath / "references.bib") <|> pure ()
-  IO.FS.removeFile (Output.declarationsBasePath / "citekey.txt") <|> pure ()
-
 /-- Preprocess and save the bib file to the output path. -/
 def preprocessBibFile (contents : String) : IO Unit := do
+  IO.FS.createDirAll Output.basePath <|> pure ()
+  IO.FS.createDirAll Output.declarationsBasePath <|> pure ()
   match BibParser.parse contents with
   | .ok ret =>
-    IO.FS.createDirAll Output.basePath
-    IO.FS.createDirAll Output.declarationsBasePath
+    IO.println s!"INFO: processed {ret.length} bib entries"
     IO.FS.writeFile (Output.basePath / "references.bib") contents
     IO.FS.writeFile (Output.declarationsBasePath / "citekey.txt") ("\n".intercalate (ret.map (·.1)))
   | .error msg =>
     IO.println s!"ERROR: failed to parse bib file, error message: {msg}"
+    IO.FS.writeFile (Output.basePath / "references.bib") ""
+    IO.FS.writeFile (Output.declarationsBasePath / "citekey.txt") ""
 
 open scoped DocGen4.Jsx
 
