@@ -88,9 +88,9 @@ private def bibEntry : Parsec (String × HashMap String String) := attempt do
     |>.insert "__kind__" kind
     |>.insert "__citekey__" citekey)
 
-def parse (s : String) : Except String (List (String × HashMap String String)) :=
+def parse (s : String) : Except String (Array (String × HashMap String String)) :=
   match many bibEntry (removeComment s).mkIterator with
-  | .success _ ret => .ok ret.toList
+  | .success _ ret => .ok ret
   | .error _ s => .error s
 
 end BibParser
@@ -101,24 +101,39 @@ def preprocessBibFile (contents : String) : IO Unit := do
   IO.FS.createDirAll Output.declarationsBasePath <|> pure ()
   match BibParser.parse contents with
   | .ok ret =>
-    IO.println s!"INFO: processed {ret.length} bib entries"
+    IO.println s!"INFO: processed {ret.size} bib entries"
     IO.FS.writeFile (Output.basePath / "references.bib") contents
-    IO.FS.writeFile (Output.declarationsBasePath / "citekey.txt") ("\n".intercalate (ret.map (·.1)))
+    IO.FS.writeFile (Output.declarationsBasePath / "citekey.txt")
+      ("\n".intercalate (ret.map (·.1)).toList)
   | .error msg =>
     IO.println s!"ERROR: failed to parse bib file, error message: {msg}"
     IO.FS.writeFile (Output.basePath / "references.bib") ""
     IO.FS.writeFile (Output.declarationsBasePath / "citekey.txt") ""
 
+namespace Output
+
 open scoped DocGen4.Jsx
 
-def Output.references
+def refItem (ref : String × HashMap String String) : BaseHtmlM Html := do
+  pure <|
+    <li id={s!"ref_{ref.1}"}>
+      <a href={s!"#ref_{ref.1}"}>{s!"[{ref.1}]"}</a>
+      {" " ++ (ref.2.findD "author" "(author not found)") ++ ". "}
+      <i>{ref.2.findD "title" "(title not found)" ++ "."}</i>
+    </li>
+
+def references
+    (refs : Array (String × HashMap String String))
     : BaseHtmlM Html := templateLiftExtends (baseHtml "References") do
   pure <|
     <main>
       <a id="top"></a>
       <h1>References</h1>
-
-      -- TODO:
+      <ul>
+      [← refs.mapM refItem]
+      </ul>
     </main>
+
+end Output
 
 end DocGen4

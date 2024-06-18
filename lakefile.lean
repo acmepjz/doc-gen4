@@ -127,18 +127,17 @@ target bibPrepass : FilePath := do
   let exeJob ← «doc-gen4».fetch
   let basePath := (←getWorkspace).root.buildDir / "doc"
   let inputFile := (←getWorkspace).root.srcDir / "docs" / "references.bib"
-  let inputFiles := #[inputFile]
   let outputFile := basePath / "declarations" / "citekey.txt"
   exeJob.bindSync fun exeFile exeTrace => do
-    let trace ← buildFileUnlessUpToDate outputFile exeTrace do
+    let inputTrace ← computeTrace inputFile <|> pure .nil
+    let depTrace := exeTrace.mix inputTrace
+    let trace ← buildFileUnlessUpToDate outputFile depTrace do
       proc {
         cmd := exeFile.toString
         args := #["bibPrepass", inputFile.toString]
         env := ← getAugmentedEnv
       }
-    let traces ← inputFiles.mapM computeTrace
-    let indexTrace := mixTraceArray traces
-    return (outputFile, trace.mix indexTrace)
+    return (outputFile, trace)
 
 module_facet docs (mod) : FilePath := do
   let exeJob ← «doc-gen4».fetch

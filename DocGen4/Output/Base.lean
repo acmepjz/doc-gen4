@@ -33,6 +33,10 @@ structure SiteBaseContext where
   pages that don't have a module name.
   -/
   currentName : Option Name
+  /--
+  The cite keys.
+  -/
+  citekeys : HashSet String
 
 /--
 The context used in the `HtmlM` monad for HTML templating.
