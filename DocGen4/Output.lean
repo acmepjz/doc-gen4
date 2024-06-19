@@ -36,13 +36,8 @@ def htmlOutputSetup (config : SiteBaseContext) : IO Unit := do
   let foundationalTypesHtml := ReaderT.run foundationalTypes config |>.toString
   let navbarHtml := ReaderT.run navbar config |>.toString
   let searchHtml := ReaderT.run search config |>.toString
-  let refs : Array (String × HashMap String String) ← (do
-    let contents ← FS.readFile (Output.basePath / "references.bib")
-    match BibParser.parse contents with
-    | .ok ret => pure ret
-    | .error _ => pure #[]
-  ) <|> (pure #[])
-  let referencesHtml := ReaderT.run (references refs) config |>.toString
+  let referencesHtmlTmp := (← FS.readFile (Output.basePath / "references.html.tmp")).replace "&nbsp;" " "
+  let referencesHtml := ReaderT.run (references referencesHtmlTmp) config |>.toString
   let mut docGenStatic := #[
     ("style.css", styleCss),
     ("favicon.svg", faviconSvg),
@@ -104,10 +99,7 @@ def htmlOutputResults (baseConfig : SiteBaseContext) (result : AnalyzerResult) (
     FS.writeFile filePath moduleHtml.toString
 
 def getSimpleBaseContext (hierarchy : Hierarchy) : IO SiteBaseContext := do
-  let citekeys : HashSet String ← (do
-    let contents ← FS.lines (declarationsBasePath / "citekey.txt")
-    pure (.insertMany .empty (contents.filter (not ·.trim.isEmpty)))
-  ) <|> (pure .empty)
+  let citekeys ← FS.lines (declarationsBasePath / "citekey.txt") <|> (pure .empty)
   return {
     depthToRoot := 0,
     currentName := none,

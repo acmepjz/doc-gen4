@@ -34,9 +34,9 @@ structure SiteBaseContext where
   -/
   currentName : Option Name
   /--
-  The cite keys.
+  The cite keys, as an array.
   -/
-  citekeys : HashSet String
+  citekeys : Array String
 
 /--
 The context used in the `HtmlM` monad for HTML templating.
