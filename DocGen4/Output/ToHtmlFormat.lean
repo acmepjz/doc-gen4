@@ -61,6 +61,18 @@ partial def _root_.Lean.Xml.cToStringEscaped : Xml.Content → String
 
 end
 
+mutual
+
+partial def _root_.Lean.Xml.eToPlaintext : Xml.Element → String
+| .Element _ _ c => s!"{c.map cToPlaintext |>.foldl (· ++ ·) ""}"
+
+partial def _root_.Lean.Xml.cToPlaintext : Xml.Content → String
+| .Element e => eToPlaintext e
+| .Comment _ => ""
+| .Character c => c
+
+end
+
 def attributesToString (attrs : Array (String × String)) :String :=
   attrs.foldl (fun acc (k, v) => acc ++ " " ++ k ++ "=\"" ++ escape v ++ "\"") ""
 

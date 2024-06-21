@@ -124,7 +124,7 @@ target bibPrepass : FilePath := do
   let exeJob ← «doc-gen4».fetch
   let basePath := (←getWorkspace).root.buildDir / "doc"
   let inputFile := (←getWorkspace).root.srcDir / "docs" / "references.bib"
-  let outputFile := basePath / "declarations" / "citekey.txt"
+  let outputFile := basePath / "declarations" / "references.json"
   exeJob.bindSync fun exeFile exeTrace => do
     let inputTrace ← computeTrace inputFile <|> pure .nil
     let depTrace := exeTrace.mix inputTrace

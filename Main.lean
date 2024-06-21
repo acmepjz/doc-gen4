@@ -39,14 +39,16 @@ def runBibPrepassCmd (p : Parsed) : IO UInt32 := do
   let source := match p.positionalArg? "source" with
     | .some s => (s.as? String).getD "-"
     | .none => "-"
-  if source == "-" then
-    IO.println "INFO: reference page disabled"
-    preprocessBibFile ""
-  else
-    let readFileFailed : IO String := do
-      IO.println s!"WARNING: failed to load file \"{source}\"; reference page disabled"
+  let readContents : IO String := do
+    if source == "-" then
+      IO.println "INFO: reference page disabled"
       pure ""
-    preprocessBibFile (← (IO.FS.readFile source <|> readFileFailed))
+    else
+      let readFileFailed : IO String := do
+        IO.println s!"WARNING: failed to load file \"{source}\"; reference page disabled"
+        pure ""
+      IO.FS.readFile source <|> readFileFailed
+  preprocessBibFile (← readContents) Pybtex.process
   return 0
 
 def singleCmd := `[Cli|

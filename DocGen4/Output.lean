@@ -11,6 +11,7 @@ import DocGen4.Output.Module
 import DocGen4.Output.NotFound
 import DocGen4.Output.Find
 import DocGen4.Output.References
+import DocGen4.Output.Pybtex
 import DocGen4.Output.SourceLinker
 import DocGen4.Output.Search
 import DocGen4.Output.ToJson
@@ -36,8 +37,7 @@ def htmlOutputSetup (config : SiteBaseContext) : IO Unit := do
   let foundationalTypesHtml := ReaderT.run foundationalTypes config |>.toString
   let navbarHtml := ReaderT.run navbar config |>.toString
   let searchHtml := ReaderT.run search config |>.toString
-  let referencesHtmlTmp := (← FS.readFile (Output.basePath / "references.html.tmp")).replace "&nbsp;" " "
-  let referencesHtml := ReaderT.run (references referencesHtmlTmp) config |>.toString
+  let referencesHtml := ReaderT.run references config |>.toString
   let mut docGenStatic := #[
     ("style.css", styleCss),
     ("favicon.svg", faviconSvg),
@@ -99,12 +99,14 @@ def htmlOutputResults (baseConfig : SiteBaseContext) (result : AnalyzerResult) (
     FS.writeFile filePath moduleHtml.toString
 
 def getSimpleBaseContext (hierarchy : Hierarchy) : IO SiteBaseContext := do
-  let citekeys ← FS.lines (declarationsBasePath / "citekey.txt") <|> (pure .empty)
+  let contents ← FS.readFile (declarationsBasePath / "references.json") <|> (pure "[]")
+  let .ok jsonContent := Json.parse contents | unreachable!
+  let .ok (refs : Array BibItem) := fromJson? jsonContent | unreachable!
   return {
     depthToRoot := 0,
     currentName := none,
     hierarchy := hierarchy,
-    citekeys := citekeys
+    refs := refs
   }
 
 def htmlOutputIndex (baseConfig : SiteBaseContext) : IO Unit := do

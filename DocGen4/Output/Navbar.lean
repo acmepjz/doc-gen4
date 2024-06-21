@@ -68,7 +68,7 @@ def navbar : BaseHtmlM Html := do
     <div class="nav_link"><a href={s!"{← getRoot}foundational_types.html"}>foundational types</a></div>
   ]
   let config ← read
-  if not config.citekeys.isEmpty then
+  if not config.refs.isEmpty then
     staticPages := staticPages.push <div class="nav_link"><a href={s!"{← getRoot}references.html"}>references</a></div>
   pure
     <html lang="en">
