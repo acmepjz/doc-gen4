@@ -64,6 +64,10 @@ structure SiteContext where
   A function to link declaration names to their source URLs, usually Github ones.
   -/
   sourceLinker : Name → Option DeclarationRange → String
+  /--
+  The references as a map.
+  -/
+  refsMap : HashMap String BibItem
 
 def setCurrentName (name : Name) (ctx : SiteBaseContext) := {ctx with currentName := some name}
 

@@ -143,10 +143,33 @@ def addHeadingAttributes (el : Element) (modifyElement : Element → HtmlM Eleme
 def extendAnchor (el : Element) : HtmlM Element := do
   match el with
   | Element.Element name attrs contents =>
-    let newAttrs ← match attrs.find? "href" with
-    | some href => pure (attrs.insert "href" (← extendLink href))
-    | none => pure attrs
-    return ⟨ name, newAttrs, contents⟩
+    match attrs.find? "href" with
+    | some href =>
+      let refsMap := (← read).refsMap
+      let bibitem : Option BibItem :=
+        if href.startsWith "references.html#ref_" then
+          refsMap.find? (href.drop "references.html#ref_".length)
+        else
+          .none
+      let attrs := attrs.insert "href" (← extendLink href)
+      match bibitem with
+      | .some bibitem =>
+        -- TODO: add reverse reference link
+        let changeName : Bool :=
+          if contents.size = 1 then
+            match contents.get! 0 with
+            | .Character s => s == bibitem.citekey
+            | _ => false
+          else
+            false
+        let attrs := attrs.insert "title" bibitem.plaintext
+        if changeName then
+          return ⟨ name, attrs, #[.Character bibitem.tag] ⟩
+        else
+          return ⟨ name, attrs, contents ⟩
+      | .none =>
+        return ⟨ name, attrs, contents ⟩
+    | none => return ⟨ name, attrs, contents ⟩
 
 /-- Automatically add intra documentation link for inline code span. -/
 def autoLink (el : Element) : HtmlM Element := do
@@ -208,17 +231,38 @@ partial def modifyElement (element : Element) : HtmlM Element :=
         | _ => pure c
       return ⟨ name, attrs, newContents ⟩
 
+/-- Find all references in a markdown text. -/
+partial def findAllReferences (refsMap : HashMap String BibItem) (s : String) (i : String.Pos := 0)
+    (ret : HashSet String := .empty) : HashSet String :=
+  let lps := s.posOfAux '[' s.endPos i
+  if lps < s.endPos then
+    let lpe := s.posOfAux ']' s.endPos lps
+    if lpe < s.endPos then
+      let citekey := Substring.toString ⟨s, ⟨lps.1 + 1⟩, lpe⟩
+      match refsMap.find? citekey with
+      | .some _ => findAllReferences refsMap s lpe (ret.insert citekey)
+      | .none => findAllReferences refsMap s lpe ret
+    else
+      ret
+  else
+    ret
+
 /-- Convert docstring to Html. -/
 def docStringToHtml (s : String) : HtmlM (Array Html) := do
-  let rendered := match MD4Lean.renderHtml s with
-    | .some res => res
-    | _ => "" -- TODO: should print some error message
-  match manyDocument rendered.mkIterator with
-  | Parsec.ParseResult.success _ res =>
-    -- TODO: use `toString` instead of `eToStringEscaped`
-    -- once <https://github.com/leanprover/lean4/issues/4411> is fixed
-    res.mapM fun x => do return Html.raw <| eToStringEscaped (← modifyElement x)
-  | _ => return #[Html.raw rendered]
+  let refsMarkdown := "\n\n" ++ (String.join <|
+    (findAllReferences (← read).refsMap s).toList.map fun s =>
+      s!"[{s}]: references.html#ref_{s}\n")
+  match MD4Lean.renderHtml (s ++ refsMarkdown) with
+  | .some rendered =>
+    match manyDocument rendered.mkIterator with
+    | Parsec.ParseResult.success _ res =>
+      -- TODO: use `toString` instead of `eToStringEscaped`
+      -- once <https://github.com/leanprover/lean4/issues/4411> is fixed
+      res.mapM fun x => do return Html.raw <| eToStringEscaped (← modifyElement x)
+    | _ =>
+      return #[.raw "<span style='color:red;'>Error: failed to postprocess: </span>", .raw rendered]
+  | .none =>
+    return #[.raw "<span style='color:red;'>Error: failed to parse markdown: </span>", .text s]
 
 end Output
 end DocGen4

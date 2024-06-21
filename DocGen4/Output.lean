@@ -77,7 +77,8 @@ def htmlOutputDeclarationDatas (result : AnalyzerResult) : HtmlT IO Unit := do
 def htmlOutputResults (baseConfig : SiteBaseContext) (result : AnalyzerResult) (sourceUrl? : Option String) : IO Unit := do
   let config : SiteContext := {
     result := result,
-    sourceLinker := SourceLinker.sourceLinker sourceUrl?
+    sourceLinker := SourceLinker.sourceLinker sourceUrl?,
+    refsMap := .ofList (baseConfig.refs.map fun x => (x.citekey, x)).toList
   }
 
   FS.createDirAll basePath
