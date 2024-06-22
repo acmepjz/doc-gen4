@@ -76,8 +76,8 @@ def htmlOutputDeclarationDatas (result : AnalyzerResult) : HtmlT IO Unit := do
 
 def htmlOutputResults (baseConfig : SiteBaseContext) (result : AnalyzerResult) (sourceUrl? : Option String) : IO Unit := do
   let config : SiteContext := {
-    result := result,
-    sourceLinker := SourceLinker.sourceLinker sourceUrl?,
+    result := result
+    sourceLinker := SourceLinker.sourceLinker sourceUrl?
     refsMap := .ofList (baseConfig.refs.map fun x => (x.citekey, x)).toList
   }
 
@@ -95,18 +95,19 @@ def htmlOutputResults (baseConfig : SiteBaseContext) (result : AnalyzerResult) (
       depthToRoot := modName.components.dropLast.length
       currentName := some modName
     }
-    let moduleHtml := moduleToHtml module |>.run config baseConfig
+    let (moduleHtml, backrefs) := moduleToHtml module #[] |>.run config baseConfig
     FS.createDirAll fileDir
     FS.writeFile filePath moduleHtml.toString
+    FS.writeFile (declarationsBasePath / s!"backrefs-{module.name}.json") (toString (toJson backrefs))
 
 def getSimpleBaseContext (hierarchy : Hierarchy) : IO SiteBaseContext := do
   let contents ← FS.readFile (declarationsBasePath / "references.json") <|> (pure "[]")
   let .ok jsonContent := Json.parse contents | unreachable!
   let .ok (refs : Array BibItem) := fromJson? jsonContent | unreachable!
   return {
-    depthToRoot := 0,
-    currentName := none,
-    hierarchy := hierarchy,
+    depthToRoot := 0
+    currentName := none
+    hierarchy := hierarchy
     refs := refs
   }
 

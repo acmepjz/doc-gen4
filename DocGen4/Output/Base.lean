@@ -29,6 +29,18 @@ structure BibItem where
   plaintext : String
   deriving FromJson, ToJson
 
+/-- The structure representing a backref item. -/
+structure BackrefItem where
+  /-- The cite key as in the bib file. -/
+  citekey : String
+  /-- The name of the module. -/
+  modName : Name
+  /-- The name of the function, as a string. It is empty if the backref is in modstring. -/
+  funName : String
+  /-- The index of the backref in that module, starting from zero. -/
+  index : Nat
+  deriving FromJson, ToJson
+
 /--
 The context used in the `BaseHtmlM` monad for HTML templating.
 -/
