@@ -97,7 +97,7 @@ def docInfoToHtml (module : Name) (doc : DocInfo) (backrefs : Array BackrefItem)
   | _ => pure (#[], backrefs)
   -- rendered doc stirng
   let (docStringHtml, backrefs) ← match doc.getDocString with
-  | some s => docStringToHtml s "" backrefs
+  | some s => docStringToHtml s doc.getName.toString backrefs
   | none => pure (#[], backrefs)
   -- extra information like equations and instances
   let extraInfoHtml ← match doc with

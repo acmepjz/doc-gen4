@@ -22,6 +22,16 @@ namespace DocGen4
 
 open Lean IO System Output Process
 
+def collectBackrefs : IO (Array BackrefItem) := do
+  let mut backrefs : Array BackrefItem := #[]
+  for entry in ← System.FilePath.readDir declarationsBasePath do
+    if entry.fileName.startsWith "backrefs-" && entry.fileName.endsWith ".json" then
+      let fileContent ← FS.readFile entry.path
+      let .ok jsonContent := Json.parse fileContent | unreachable!
+      let .ok (arr : Array BackrefItem) := fromJson? jsonContent | unreachable!
+      backrefs := backrefs ++ arr
+  return backrefs
+
 def htmlOutputSetup (config : SiteBaseContext) : IO Unit := do
   let findBasePath := basePath / "find"
 
@@ -37,7 +47,7 @@ def htmlOutputSetup (config : SiteBaseContext) : IO Unit := do
   let foundationalTypesHtml := ReaderT.run foundationalTypes config |>.toString
   let navbarHtml := ReaderT.run navbar config |>.toString
   let searchHtml := ReaderT.run search config |>.toString
-  let referencesHtml := ReaderT.run references config |>.toString
+  let referencesHtml := ReaderT.run (references (← collectBackrefs)) config |>.toString
   let mut docGenStatic := #[
     ("style.css", styleCss),
     ("favicon.svg", faviconSvg),
