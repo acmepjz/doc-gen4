@@ -11,10 +11,6 @@ The main function is `DocGen4.preprocessBibFile` which preprocess
 the contents of bib file using user provided `process` function,
 and save the bib file and processed json file to output directory.
 
-Currently we have an implementation of `process` function using `pybtex`,
-which is `DocGen4.Pybtex.process`. In the future this may be replaced by
-a pure Lean implementation.
-
 ---
 
 ### Test reference support
@@ -76,15 +72,7 @@ Ribenboim [ribenboim1971]
 | test4 : (Nat → Nat) → TestInductive
 
 /-- Preprocess (using the user provided `process` function)
-and save the bib file to the output path.
-
----
-
-Test reference support:
-It was introduced in papers by Orzech [orzech1971], Djoković [djokovic1973] and
-Ribenboim [ribenboim1971]
-
--/
+and save the bib file to the output path. -/
 def preprocessBibFile (contents : String) (process : String → IO (Array BibItem)) : IO Unit := do
   -- create directories
   IO.FS.createDirAll basePath
