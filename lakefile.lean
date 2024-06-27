@@ -11,6 +11,9 @@ lean_exe «doc-gen4» {
   supportInterpreter := true
 }
 
+lean_exe test where
+  root := `Test
+
 require MD4Lean from git
   "https://github.com/acmepjz/md4lean" @ "main"
 
