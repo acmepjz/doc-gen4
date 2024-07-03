@@ -1,14 +1,20 @@
 import BibtexQuery.Parser
-import DocGen4.Output.Bibtex.TexDiacritics
+import DocGen4.Output.Bibtex.Name
 
 open Lean Parsec BibtexQuery DocGen4 Bibtex
 
 def test (category : String) (name : String) (tags : List Tag) : String :=
-  let author? : Option String := tags.findSome? fun t =>
-    if t.name = "author" then .some t.content else .none
-  let title? : Option String := tags.findSome? fun t =>
-    if t.name = "title" then .some t.content else .none
-  s!"category={category}\ncitekey={name}\nauthor={author?.getD "(author not found)"}\ntitle={title?.getD "(title not found)"}"
+  let author : String := tags.findSome? (fun t =>
+    if t.name = "author" then .some t.content else .none) |>.getD ""
+  let title : String := tags.findSome? (fun t =>
+    if t.name = "title" then .some t.content else .none) |>.getD ""
+  let abbr : String :=
+    match processNames author with
+    | .ok arr =>
+      String.join (arr.map (fun x =>
+        if arr.size ≥ 2 then x.oneLetterAbbr else x.threeLetterAbbr)).toList
+    | .error err => err
+  s!"category={category}\ncitekey={name}\nauthor={author}\nabbr={abbr}\ntitle={title}"
 
 def main (args : List String) : IO Unit := do
   match args with
@@ -18,11 +24,11 @@ def main (args : List String) : IO Unit := do
       let ret2 : List String := ← ret.filterMapM fun e => do
         if let .normalType category name tags := e then
           let s := test category name tags
-          match (texDiacritics <* eof) s.iter with
-          | .success _ ret =>
-            match (removeBraces <* eof) ret.iter with
-            | .success _ ret =>
-              return .some ret
+          match texDiacritics s.iter with
+          | .success _ s =>
+            match removeBraces s.iter with
+            | .success _ s =>
+              return .some s
             | .error it err =>
               IO.println s!"error: failed to run 'removeBraces' on '{it.1}' at pos {it.2}: {err}"
               return .none
