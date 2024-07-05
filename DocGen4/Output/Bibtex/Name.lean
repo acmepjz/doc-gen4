@@ -81,7 +81,7 @@ def getName (arr : Array String) : String × String :=
           s.toSubstring.drop 1 |>.dropRight 1 |>.toString)
       else
         let lastName := arr.reverse.toSubarray.drop 1 |>.toArray.takeWhile
-          (fun s => GeneralCategory.isLowercaseLetter s.front) |>.reverse.push s
+          (fun s => isLowercase s.front) |>.reverse.push s
         (arr.toSubarray.take (arr.size - lastName.size) |> join',
           lastName.toSubarray |> join')
 
@@ -111,7 +111,7 @@ def stripDiacritics (c : Char) : Char :=
   | '\u00DF' => 's' | '\u1E9E' => 'S'
   | _ =>
     let s := getCanonicalDecomposition c
-    s.get? (s.find GeneralCategory.isLetter) |>.getD c
+    s.get? (s.find fun c => (getUnicodeData c).canonicalCombiningClass == 0) |>.getD c
 
 /-- Check if a string is an upper case Roman numerals.
 It does not check the validity of the number, for example, it accepts `IXIX`. -/
@@ -129,9 +129,9 @@ def getLastNameAbbr (arr : Array String) : String × String :=
   match arr with
   | #[] => ("", "")
   | #[s] =>
-    let s := s.toList.toArray.map stripDiacritics |>.filter GeneralCategory.isLetter
+    let s := s.toList.toArray.map stripDiacritics |>.filter isAlphabetic
     let arr : Array Nat := s.zipWithIndex.filterMap fun x =>
-      if GeneralCategory.isUppercaseLetter x.1 then .some x.2 else .none
+      if isUppercase x.1 then .some x.2 else .none
     if arr.size ≥ 2 then
       if arr[0]! + 2 = arr[1]! then
         let s := s.toSubarray.drop arr[0]! |>.take 3 |>.toArray.toList |> String.mk
