@@ -1,7 +1,7 @@
 import BibtexQuery.Parser
-import DocGen4.Output.Bibtex.Name
+import BibtexQuery.Name
 
-open Lean Parsec BibtexQuery DocGen4 Bibtex
+open Lean Parsec BibtexQuery TexDiacritics
 
 def test (category : String) (name : String) (tags : List Tag) : String :=
   let author : String := tags.findSome? (fun t =>
